@@ -565,6 +565,7 @@ exports.tuckShopSalesReport = async (req, res) => {
             createdAt: { $gte: fromDate, $lte: toDate }
         })
             .populate('products.productId', 'itemName price category')
+            .populate('student_id', 'registration_number student_name') 
             .lean();
 
         if (!transactions || transactions.length === 0) {
@@ -575,7 +576,7 @@ exports.tuckShopSalesReport = async (req, res) => {
         transactions.forEach(tx => {
             tx.products.forEach(prod => {
                 formattedData.push({
-                    Roll_no: tx.inmateId,
+                    Roll_no: tx.student_id.registration_number,
                     productName: prod.productId?.itemName || 'N/A',
                     category: prod.productId?.category || 'N/A',
                     quantity: prod.quantity,
