@@ -434,7 +434,7 @@ exports.intimateBalanceReport = async (req, res) => {
 
 exports.transactionSummaryReport = async (req, res) => {
     try {
-        const { dateRange = "yearly", format = "json", department ,board_name = "all"} = req.body;
+        const { dateRange = "yearly", format = "json", department, board_name = "all" } = req.body;
 
         const now = new Date();
         let startDate;
@@ -475,37 +475,37 @@ exports.transactionSummaryReport = async (req, res) => {
         // Merge data
 
         const allTransactions = [
-    ...posTransactions
-        .filter(tx => board_name === "all" || tx.student_id?.board_name === board_name)
-        .map(tx => ({
-            registration_number: tx.student_id?.registration_number,
-            board_name: tx.student_id?.board_name,
-            transaction: "POS Purchase",
-            source: "POS",
-            amount: tx.totalAmount,
-            type: "POS",
-            createdAt: tx.createdAt
-        })),
+            ...posTransactions
+                .filter(tx => board_name === "all" || tx.student_id?.board_name === board_name)
+                .map(tx => ({
+                    registration_number: tx.student_id?.registration_number,
+                    board_name: tx.student_id?.board_name,
+                    transaction: "POS Purchase",
+                    source: "POS",
+                    amount: tx.totalAmount,
+                    type: "POS",
+                    createdAt: tx.createdAt
+                })),
 
-    ...financialTransactions
-        .filter(tx => board_name === "all" || tx.student_id?.board_name === board_name)
-        .map(tx => ({
-            registration_number: tx.student_id?.registration_number,
-            board_name: tx.student_id?.board_name,
-            transaction: tx.transaction || "",
-            source: "FINANCIAL",
-            amount: tx.depositAmount || tx.wageAmount || 0,
-            type: tx.type,
-            createdAt: tx.createdAt
-        }))
-];
+            ...financialTransactions
+                .filter(tx => board_name === "all" || tx.student_id?.board_name === board_name)
+                .map(tx => ({
+                    registration_number: tx.student_id?.registration_number,
+                    board_name: tx.student_id?.board_name,
+                    transaction: tx.transaction || "",
+                    source: "FINANCIAL",
+                    amount: tx.depositAmount || tx.wageAmount || 0,
+                    type: tx.type,
+                    createdAt: tx.createdAt
+                }))
+        ];
 
         // Sort transactions by newest first
         allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         // CSV Export
         if (format === "csv") {
-            const fields = ["registration_number","board_name", "transaction", "source", "amount", "type", "createdAt"];
+            const fields = ["registration_number", "board_name", "transaction", "source", "amount", "type", "createdAt"];
             const parser = new Parser({ fields });
             const csv = parser.parse(allTransactions);
 
@@ -532,7 +532,7 @@ exports.transactionSummaryReport = async (req, res) => {
 
 exports.tuckShopSalesReport = async (req, res) => {
     try {
-        let { startDate, endDate, dateRange, format = 'json' } = req.body;
+        let { startDate, endDate, dateRange, format = 'json', board_name = "all" } = req.body;
 
         if ((!dateRange && (!startDate || !endDate))) {
             return res.status(400).json({ message: 'Missing required fields' });
@@ -569,18 +569,28 @@ exports.tuckShopSalesReport = async (req, res) => {
             createdAt: { $gte: fromDate, $lte: toDate }
         })
             .populate('products.productId', 'itemName price category')
-            .populate('student_id', 'registration_number student_name')
+            .populate('student_id', 'registration_number student_name board_name')
             .lean();
 
-        if (!transactions || transactions.length === 0) {
-            return res.status(404).json({ success: false, message: "No transaction data found" });
+        const filteredTransactions = transactions.filter(tx => {
+            if (board_name === "all") return true;
+            return tx.student_id?.board_name === board_name;
+        });
+
+        if (!filteredTransactions.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No transaction data found"
+            });
         }
 
         const formattedData = [];
-        transactions.forEach(tx => {
+
+        filteredTransactions.forEach(tx => {
             tx.products.forEach(prod => {
                 formattedData.push({
                     Roll_no: tx.student_id.registration_number,
+                    board_name: tx.student_id.board_name,
                     productName: prod.productId?.itemName || 'N/A',
                     category: prod.productId?.category || 'N/A',
                     quantity: prod.quantity,
@@ -604,6 +614,7 @@ exports.tuckShopSalesReport = async (req, res) => {
         if (format === 'csv') {
             const fields = [
                 'Roll_no',
+                'board_name',
                 'productName',
                 'category',
                 'quantity',
