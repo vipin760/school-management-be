@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     fullname: {type: String},
     password: {type:String,required: true},
     role: { type: String, required:true },
-    location_id:{type:mongoose.Schema.Types.ObjectId ,ref:"InmateLocation"},
+    location_id:{type:mongoose.Schema.Types.ObjectId ,ref:"StudentLocation"},
     inmateId:{type:String},
     descriptor:[Number],
     subscription:{type:Boolean,default:false},
