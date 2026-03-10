@@ -81,22 +81,28 @@ exports.AddLocation = async (req, res) => {
       });
     }
 
+    // 🔴 Assign location to admin
+    await User.findByIdAndUpdate(
+      req.user.id,
+      { location_id: location._id },
+      { new: true }
+    );
     // 3️⃣ ALWAYS attempt global sync (fire & forget)
-    syncToGlobal(location);
+   await syncToGlobal(location);
 
-    return res.status(201).json({
-      success: true,
-      data: location,
-      message: "Location available locally. Global sync triggered."
-    });
+  return res.status(201).json({
+    success: true,
+    data: location,
+    message: "Location available locally. Global sync triggered."
+  });
 
-  } catch (err) {
-    console.error("AddLocation error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
-  }
+} catch (err) {
+  console.error("AddLocation error:", err);
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error"
+  });
+}
 };
 // exports.updateLocation = async (req, res) => {
 //     try {
@@ -264,6 +270,14 @@ exports.updateLocation = async (req, res) => {
       updateData,
       { new: true, runValidators: true }
     );
+console.log("<><>updatedLocation",updatedLocation)
+     // 🔴 Ensure admin has location_id
+    const locationupdate = await User.findByIdAndUpdate(
+      req.user.id,
+      { location_id: updatedLocation._id }
+    );
+
+    console.log("<><>locationupdate",locationupdate)
 
     // 4️⃣ Async global sync (fire & forget)
     await syncUpdateToGlobal(updatedLocation);
