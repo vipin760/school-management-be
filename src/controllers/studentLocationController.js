@@ -83,7 +83,7 @@ exports.AddLocation = async (req, res) => {
     }
 
     // 🔴 Assign location to admin
-    await User.findByIdAndUpdate(
+    await userModel.findByIdAndUpdate(
       req.user.id,
       { location_id: location._id },
       { new: true }
