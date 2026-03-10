@@ -20,7 +20,7 @@ const convertExcelDate = (excelDate) => {
     // Convert Excel serial number to JS date
     const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
     return moment(date).format('DD-MM-YYYY'); // formatted as DD-MM-YYYY
-  } 
+  }
   // If already a string, try parsing
   const parsed = moment(excelDate, ['YYYY-MM-DD', 'DD-MM-YYYY']);
   if (parsed.isValid()) return parsed.format('DD-MM-YYYY');
@@ -190,7 +190,7 @@ const bulkUpsertInmates = async (req, res) => {
 };
 
 const bulkUpsertStudents = async (req, res) => {
-  
+
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
@@ -228,7 +228,6 @@ const bulkUpsertStudents = async (req, res) => {
         father_name,
         mother_name,
         gender,
-        birth_place,
         nationality,
         mother_tongue,
         blood_group,
@@ -239,13 +238,17 @@ const bulkUpsertStudents = async (req, res) => {
         academic_year,
         contact_number,
         descriptor,
-        pro_pic
+        pro_pic,
+        hostel_name,
+        board_name
       } = student;
-      let date_of_birth = convertExcelDate(student.date_of_birth)
-      
+      // let date_of_birth = convertExcelDate(student.date_of_birth)
+
 
       // Validate required fields
       const missingFields = [];
+      if (!hostel_name) missingFields.push("hostel_name");
+      if (!board_name) missingFields.push("board_name");
       if (!registration_number) missingFields.push("registration_number");
       if (!student_name) missingFields.push("student_name");
       if (!father_name) missingFields.push("father_name");
@@ -306,25 +309,21 @@ const bulkUpsertStudents = async (req, res) => {
 
       // Create student
       try {
-        const dob = moment(date_of_birth, ['YYYY-MM-DD', 'DD-MM-YYYY']).toDate();
-        if (!dob || isNaN(dob.getTime())) {
-          results.failed.push({ registration_number, reason: "Invalid date_of_birth format" });
-          if (savedUser) await userModel.findByIdAndDelete(savedUser._id);
-          continue;
-        }
+        // const dob = moment(date_of_birth, ['YYYY-MM-DD', 'DD-MM-YYYY']).toDate();
+        // if (!dob || isNaN(dob.getTime())) {
+        //   results.failed.push({ registration_number, reason: "Invalid date_of_birth format" });
+        //   if (savedUser) await userModel.findByIdAndDelete(savedUser._id);
+        //   continue;
+        // }
 
         const savedStudent = await studentModel.create({
           registration_number,
           student_name,
           father_name,
           mother_name,
-          date_of_birth: dob,
           gender,
-          birth_place,
-          nationality,
-          mother_tongue,
-          blood_group,
-          religion,
+          hostel_name,
+          board_name,
           deposite_amount,
           class_info: classData._id,
           location_id,
@@ -503,4 +502,4 @@ const bulkUpsertFinancial = async (req, res) => {
   }
 };
 
-module.exports = { bulkUpsertInmates,bulkUpsertStudents, bulkUpsertFinancial };
+module.exports = { bulkUpsertInmates, bulkUpsertStudents, bulkUpsertFinancial };
