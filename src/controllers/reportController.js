@@ -994,6 +994,7 @@ exports.studentReport = async (req, res) => {
       gender,
       location_id,
       class_name,
+      board_name,
       format = 'json'
     } = req.body;
 
@@ -1005,6 +1006,9 @@ exports.studentReport = async (req, res) => {
     if (registration_number) filter.registration_number = { $regex: registration_number, $options: 'i' };
     if (gender) filter.gender = gender;
     if (location_id) filter.location_id = location_id;
+    if(board_name != "all"){
+        filter.board_name = board_name;
+    }
 
     // --- Filter by class_name ---
     if (class_name) {
