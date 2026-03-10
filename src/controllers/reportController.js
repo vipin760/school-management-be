@@ -468,31 +468,31 @@ exports.transactionSummaryReport = async (req, res) => {
                 .populate("student_id")
                 .lean(),
             Financial.find({ createdAt: { $gte: startDate } })
-            .populate("student_id")
-            .lean()
+                .populate("student_id")
+                .lean()
         ]);
 
         // Merge data
         const allTransactions = [
             ...posTransactions.map(tx => {
                 return ({
-                registration_number: tx.student_id.registration_number,
-                transaction: "POS Purchase",
-                source: "POS",
-                amount: tx.totalAmount,
-                type: "POS",
-                createdAt: tx.createdAt
-            })
+                    registration_number: tx.student_id.registration_number,
+                    transaction: "POS Purchase",
+                    source: "POS",
+                    amount: tx.totalAmount,
+                    type: "POS",
+                    createdAt: tx.createdAt
+                })
             }),
             ...financialTransactions.map(tx => {
                 return ({
-                registration_number: tx.student_id.registration_number,
-                transaction: tx.transaction || "",
-                source: "FINANCIAL",
-                amount: tx.depositAmount || tx.wageAmount || 0,
-                type: tx.type,
-                createdAt: tx.createdAt
-            })
+                    registration_number: tx.student_id.registration_number,
+                    transaction: tx.transaction || "",
+                    source: "FINANCIAL",
+                    amount: tx.depositAmount || tx.wageAmount || 0,
+                    type: tx.type,
+                    createdAt: tx.createdAt
+                })
             })
         ];
 
@@ -565,7 +565,7 @@ exports.tuckShopSalesReport = async (req, res) => {
             createdAt: { $gte: fromDate, $lte: toDate }
         })
             .populate('products.productId', 'itemName price category')
-            .populate('student_id', 'registration_number student_name') 
+            .populate('student_id', 'registration_number student_name')
             .lean();
 
         if (!transactions || transactions.length === 0) {
@@ -723,389 +723,389 @@ exports.wageDistributionReport = async (req, res) => {
 }
 
 exports.inventoryStockHistoryReport1 = async (req, res) => {
-  try {
-    let { startDate, endDate, dateRange, format = 'json' } = req.body;
+    try {
+        let { startDate, endDate, dateRange, format = 'json' } = req.body;
 
-    // --- Validate input ---
-    if (!dateRange && (!startDate || !endDate)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide either dateRange or startDate & endDate'
-      });
+        // --- Validate input ---
+        if (!dateRange && (!startDate || !endDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide either dateRange or startDate & endDate'
+            });
+        }
+
+        // --- Determine time window ---
+        let fromDate, toDate = new Date();
+        toDate.setHours(23, 59, 59, 999);
+
+        if (dateRange) {
+            fromDate = new Date();
+            fromDate.setHours(0, 0, 0, 0);
+
+            switch (dateRange.toLowerCase()) {
+                case '7daysago':
+                    fromDate.setDate(fromDate.getDate() - 6);
+                    break;
+                case '1monthago':
+                    fromDate.setMonth(fromDate.getMonth() - 1);
+                    break;
+                case '3monthsago':
+                    fromDate.setMonth(fromDate.getMonth() - 3);
+                    break;
+                default:
+                    return res.status(400).json({ success: false, message: 'Invalid dateRange value' });
+            }
+        } else {
+            fromDate = new Date(startDate);
+            toDate = new Date(endDate);
+            fromDate.setHours(0, 0, 0, 0);
+            toDate.setHours(23, 59, 59, 999);
+        }
+
+        // --- Fetch inventory data (you can add your own filters inside getVendorPurchaseSummary) ---
+        const inventoryData = await getVendorPurchaseSummary({
+            ...req.query,
+            fromDate,
+            toDate
+        });
+
+        if (!inventoryData || inventoryData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No inventory stock history found in selected range'
+            });
+        }
+        // Format each record (example fields—adjust to match your schema)
+        const formatted = inventoryData.map(item => ({
+            itemName: item.itemName,
+            category: item.category,
+            stockQuantity: item.stockQuantity,
+            price: item.price,
+            totalQty: item.totalQty,
+            status: item.status,
+            updatedAt: moment(item.updatedAt).format('DD-MM-YYYY hh:mm:ss A')
+        }));
+
+        const extractedItems = inventoryData.flatMap(entry =>
+            entry.items.map(itm =>
+            ({
+                vendorId: entry.vendorPurchase._id,
+                invoiceNo: entry.vendorPurchase.invoiceNo,
+                vendorName: entry.vendorPurchase.vendorName,
+                vendorValue: entry.vendorPurchase.vendorValue,
+                status: entry.vendorPurchase.status,
+                date: entry.vendorPurchase.date,
+                itemName: itm.itemName,
+                quantity: itm.stock,
+                price: itm.sellingPrice
+            })
+            )
+        );
+
+        // --- CSV export if requested ---
+        if (format === 'csv') {
+            const fields = [
+                'itemName',
+                'category',
+                'stockQuantity',
+                'price',
+                'totalQty',
+                'status',
+                'updatedAt'
+            ];
+            const parser = new Parser({ fields });
+            const csv = parser.parse(formatted);
+
+            res.setHeader(
+                'Content-Disposition',
+                'attachment; filename=inventory_stock_history.csv'
+            );
+            res.setHeader('Content-Type', 'text/csv');
+            return res.status(200).end(csv);
+        }
+
+        // --- Default JSON ---
+        return res.status(200).json({
+            success: true,
+            totalItems: formatted.length,
+            data: formatted
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
     }
-
-    // --- Determine time window ---
-    let fromDate, toDate = new Date();
-    toDate.setHours(23, 59, 59, 999);
-
-    if (dateRange) {
-      fromDate = new Date();
-      fromDate.setHours(0, 0, 0, 0);
-
-      switch (dateRange.toLowerCase()) {
-        case '7daysago':
-          fromDate.setDate(fromDate.getDate() - 6);
-          break;
-        case '1monthago':
-          fromDate.setMonth(fromDate.getMonth() - 1);
-          break;
-        case '3monthsago':
-          fromDate.setMonth(fromDate.getMonth() - 3);
-          break;
-        default:
-          return res.status(400).json({ success: false, message: 'Invalid dateRange value' });
-      }
-    } else {
-      fromDate = new Date(startDate);
-      toDate = new Date(endDate);
-      fromDate.setHours(0, 0, 0, 0);
-      toDate.setHours(23, 59, 59, 999);
-    }
-
-    // --- Fetch inventory data (you can add your own filters inside getVendorPurchaseSummary) ---
-    const inventoryData = await getVendorPurchaseSummary({
-      ...req.query,
-      fromDate,
-      toDate
-    });
-
-    if (!inventoryData || inventoryData.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No inventory stock history found in selected range'
-      });
-    }
-    // Format each record (example fields—adjust to match your schema)
-    const formatted = inventoryData.map(item => ({
-      itemName: item.itemName,
-      category: item.category,
-      stockQuantity: item.stockQuantity,
-      price: item.price,
-      totalQty: item.totalQty,
-      status: item.status,
-      updatedAt: moment(item.updatedAt).format('DD-MM-YYYY hh:mm:ss A')
-    }));
-
-    const extractedItems = inventoryData.flatMap(entry =>
-  entry.items.map(itm =>
-    ({
-    vendorId: entry.vendorPurchase._id,
-    invoiceNo: entry.vendorPurchase.invoiceNo,
-    vendorName: entry.vendorPurchase.vendorName,
-    vendorValue: entry.vendorPurchase.vendorValue,
-    status: entry.vendorPurchase.status,
-    date: entry.vendorPurchase.date,
-    itemName: itm.itemName,
-    quantity: itm.stock,
-    price: itm.sellingPrice
-  })
-  )
-);
-
-    // --- CSV export if requested ---
-    if (format === 'csv') {
-      const fields = [
-        'itemName',
-        'category',
-        'stockQuantity',
-        'price',
-        'totalQty',
-        'status',
-        'updatedAt'
-      ];
-      const parser = new Parser({ fields });
-      const csv = parser.parse(formatted);
-
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename=inventory_stock_history.csv'
-      );
-      res.setHeader('Content-Type', 'text/csv');
-      return res.status(200).end(csv);
-    }
-
-    // --- Default JSON ---
-    return res.status(200).json({
-      success: true,
-      totalItems: formatted.length,
-      data: formatted
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
 };
 
 exports.inventoryStockHistoryReport = async (req, res) => {
-  try {
-    const {
-      page,
-      limit,
-      sortField = "createdAt",
-      sortOrder = "desc",
-      itemName,
-      category,
-      status,
-      startDate,
-      endDate,
-      dateRange,
-      format = 'json'
-    } = req.body;
+    try {
+        const {
+            page,
+            limit,
+            sortField = "createdAt",
+            sortOrder = "desc",
+            itemName,
+            category,
+            status,
+            startDate,
+            endDate,
+            dateRange,
+            format = 'json'
+        } = req.body;
 
-    // --- Build filter ---
-    const filter = {};
-    if (itemName) filter.itemName = { $regex: itemName, $options: "i" };
-    if (category) filter.category = { $regex: `^${category}$`, $options: "i" };
-    if (status) filter.status = status;
+        // --- Build filter ---
+        const filter = {};
+        if (itemName) filter.itemName = { $regex: itemName, $options: "i" };
+        if (category) filter.category = { $regex: `^${category}$`, $options: "i" };
+        if (status) filter.status = status;
 
-    // --- Handle date filtering ---
-    if (startDate || endDate || dateRange) {
-      let fromDate, toDate = new Date();
-      toDate.setHours(23, 59, 59, 999);
+        // --- Handle date filtering ---
+        if (startDate || endDate || dateRange) {
+            let fromDate, toDate = new Date();
+            toDate.setHours(23, 59, 59, 999);
 
-      if (dateRange) {
-        fromDate = new Date();
-        fromDate.setHours(0, 0, 0, 0);
-        switch (dateRange.toLowerCase()) {
-          case "7daysago":
-            fromDate.setDate(fromDate.getDate() - 6);
-            break;
-          case "1monthago":
-            fromDate.setMonth(fromDate.getMonth() - 1);
-            break;
-          case "3monthsago":
-            fromDate.setMonth(fromDate.getMonth() - 3);
-            break;
-          default:
-            return res.status(400).json({ success: false, message: "Invalid dateRange value" });
+            if (dateRange) {
+                fromDate = new Date();
+                fromDate.setHours(0, 0, 0, 0);
+                switch (dateRange.toLowerCase()) {
+                    case "7daysago":
+                        fromDate.setDate(fromDate.getDate() - 6);
+                        break;
+                    case "1monthago":
+                        fromDate.setMonth(fromDate.getMonth() - 1);
+                        break;
+                    case "3monthsago":
+                        fromDate.setMonth(fromDate.getMonth() - 3);
+                        break;
+                    default:
+                        return res.status(400).json({ success: false, message: "Invalid dateRange value" });
+                }
+            } else {
+                fromDate = new Date(startDate);
+                toDate = new Date(endDate);
+                fromDate.setHours(0, 0, 0, 0);
+                toDate.setHours(23, 59, 59, 999);
+            }
+
+            filter.updatedAt = { $gte: fromDate, $lte: toDate };
         }
-      } else {
-        fromDate = new Date(startDate);
-        toDate = new Date(endDate);
-        fromDate.setHours(0, 0, 0, 0);
-        toDate.setHours(23, 59, 59, 999);
-      }
 
-      filter.updatedAt = { $gte: fromDate, $lte: toDate };
+        // --- Base query ---
+        const query = tuckShopModel.find(filter);
+
+        // --- Sorting ---
+        const sort = {};
+        sort[sortField] = sortOrder.toLowerCase() === "asc" ? 1 : -1;
+        query.sort(sort);
+
+        // --- Pagination ---
+        let paginated = false;
+        let pageNum = 1, limitNum = 0;
+        if (page && limit) {
+            pageNum = parseInt(page) || 1;
+            limitNum = parseInt(limit) || 10;
+            query.skip((pageNum - 1) * limitNum).limit(limitNum);
+            paginated = true;
+        }
+
+        // --- Fetch items ---
+        const items = await query.exec();
+        if (!items.length) {
+            return res.status(200).json({ success: true, message: "No data found", data: [] });
+        }
+
+        // --- Compute totalQty from storeItemModel ---
+        const itemNos = items.map(i => i.itemNo);
+        const storeTotals = await storeInventory.aggregate([
+            { $match: { itemNo: { $in: itemNos } } },
+            { $group: { _id: "$itemNo", totalStock: { $sum: "$stock" } } },
+        ]);
+
+        const storeMap = new Map();
+        storeTotals.forEach(s => storeMap.set(s._id, s.totalStock));
+
+        const withTotalQty = items.map(item => ({
+            ...item.toObject(),
+            totalQty: item.stockQuantity + (storeMap.get(item.itemNo) || 0),
+            updatedAt: moment(item.updatedAt).format('DD-MM-YYYY hh:mm:ss A')
+        }));
+
+        // --- Total count ---
+        const totalCount = await tuckShopModel.countDocuments(filter);
+
+        // --- CSV export ---
+        if (format === 'csv') {
+            const fields = [
+                'itemName',
+                'price',
+                'stockQuantity',
+                'totalQty',
+                'category',
+                'itemNo',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ];
+            const parser = new Parser({ fields });
+            const csv = parser.parse(withTotalQty);
+
+            res.setHeader('Content-Disposition', 'attachment; filename=inventory_stock_history.csv');
+            res.setHeader('Content-Type', 'text/csv');
+            return res.status(200).end(csv);
+        }
+
+        // --- Default JSON response ---
+        if (paginated) {
+            return res.status(200).json({
+                success: true,
+                page: pageNum,
+                limit: limitNum,
+                totalCount,
+                data: withTotalQty
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            totalCount,
+            data: withTotalQty
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+        });
     }
-
-    // --- Base query ---
-    const query = tuckShopModel.find(filter);
-
-    // --- Sorting ---
-    const sort = {};
-    sort[sortField] = sortOrder.toLowerCase() === "asc" ? 1 : -1;
-    query.sort(sort);
-
-    // --- Pagination ---
-    let paginated = false;
-    let pageNum = 1, limitNum = 0;
-    if (page && limit) {
-      pageNum = parseInt(page) || 1;
-      limitNum = parseInt(limit) || 10;
-      query.skip((pageNum - 1) * limitNum).limit(limitNum);
-      paginated = true;
-    }
-
-    // --- Fetch items ---
-    const items = await query.exec();
-    if (!items.length) {
-      return res.status(200).json({ success: true, message: "No data found", data: [] });
-    }
-
-    // --- Compute totalQty from storeItemModel ---
-    const itemNos = items.map(i => i.itemNo);
-    const storeTotals = await storeInventory.aggregate([
-      { $match: { itemNo: { $in: itemNos } } },
-      { $group: { _id: "$itemNo", totalStock: { $sum: "$stock" } } },
-    ]);
-
-    const storeMap = new Map();
-    storeTotals.forEach(s => storeMap.set(s._id, s.totalStock));
-
-    const withTotalQty = items.map(item => ({
-      ...item.toObject(),
-      totalQty: item.stockQuantity + (storeMap.get(item.itemNo) || 0),
-      updatedAt: moment(item.updatedAt).format('DD-MM-YYYY hh:mm:ss A')
-    }));
-
-    // --- Total count ---
-    const totalCount = await tuckShopModel.countDocuments(filter);
-
-    // --- CSV export ---
-    if (format === 'csv') {
-      const fields = [
-        'itemName',
-        'price',
-        'stockQuantity',
-        'totalQty',
-        'category',
-        'itemNo',
-        'status',
-        'createdAt',
-        'updatedAt'
-      ];
-      const parser = new Parser({ fields });
-      const csv = parser.parse(withTotalQty);
-
-      res.setHeader('Content-Disposition', 'attachment; filename=inventory_stock_history.csv');
-      res.setHeader('Content-Type', 'text/csv');
-      return res.status(200).end(csv);
-    }
-
-    // --- Default JSON response ---
-    if (paginated) {
-      return res.status(200).json({
-        success: true,
-        page: pageNum,
-        limit: limitNum,
-        totalCount,
-        data: withTotalQty
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      totalCount,
-      data: withTotalQty
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
 };
 
 exports.studentReport = async (req, res) => {
-  try {
-    const {
-      page,
-      limit,
-      sortField = 'createdAt',
-      sortOrder = 'desc',
-      student_name,
-      registration_number,
-      gender,
-      location_id,
-      class_name,
-      board_name,
-      format = 'json'
-    } = req.body;
+    try {
+        const {
+            page,
+            limit,
+            sortField = 'createdAt',
+            sortOrder = 'desc',
+            student_name,
+            registration_number,
+            gender,
+            location_id,
+            class_name,
+            board_name,
+            format = 'json'
+        } = req.body;
 
-    const order = sortOrder.toLowerCase() === 'asc' ? 1 : -1;
+        const order = sortOrder.toLowerCase() === 'asc' ? 1 : -1;
 
-    // --- Build filter ---
-    const filter = {};
-    if (student_name) filter.student_name = { $regex: student_name, $options: 'i' };
-    if (registration_number) filter.registration_number = { $regex: registration_number, $options: 'i' };
-    if (gender) filter.gender = gender;
-    if (location_id) filter.location_id = location_id;
-    if(board_name != "all"){
-        filter.board_name = board_name;
+        // --- Build filter ---
+        const filter = {};
+        if (student_name) filter.student_name = { $regex: student_name, $options: 'i' };
+        if (registration_number) filter.registration_number = { $regex: registration_number, $options: 'i' };
+        if (gender) filter.gender = gender;
+        if (location_id) filter.location_id = location_id;
+        if (board_name && board_name !== "all") {
+            filter.board_name = { $regex: board_name, $options: "i" };
+        }
+
+        // --- Filter by class_name ---
+        if (class_name) {
+            const classDocs = await classModel.find({ class_name: { $regex: class_name, $options: 'i' } }).select('_id');
+            if (classDocs.length) {
+                const classIds = classDocs.map(c => c._id);
+                filter.class_info = { $in: classIds };
+            } else {
+                return res.status(200).json({ success: true, message: 'No students found', data: [] });
+            }
+        }
+
+        // --- Base query ---
+        let studentQuery = studentModel.find(filter)
+            .populate('location_id', 'locationName')
+            .populate('class_info', 'class_name section academic_year')
+            .populate('pro_pic', 'file_name file_url uploaded_by')
+            .sort({ [sortField]: order });
+
+        // --- Pagination ---
+        let paginated = false;
+        let pageNum = 1, limitNum = 0;
+        if (page && limit) {
+            pageNum = parseInt(page) || 1;
+            limitNum = parseInt(limit) || 10;
+            studentQuery = studentQuery.skip((pageNum - 1) * limitNum).limit(limitNum);
+            paginated = true;
+        }
+
+        // --- Fetch students ---
+        const students = await studentQuery.lean();
+        if (!students.length) {
+            return res.status(200).json({ success: true, message: 'No students found', data: [] });
+        }
+
+        // --- Format date fields ---
+        students.forEach(s => {
+            s.createdAt = moment(s.createdAt).format('DD-MM-YYYY hh:mm:ss A');
+            s.updatedAt = moment(s.updatedAt).format('DD-MM-YYYY hh:mm:ss A');
+            if (s.date_of_birth) s.date_of_birth = moment(s.date_of_birth).format('DD-MM-YYYY');
+        });
+
+        // --- CSV export ---
+        if (format === 'csv') {
+            const csvData = students.map(s => ({
+                Roll_no: s.registration_number || '',
+                student_name: s.student_name || '',
+                gender: s.gender || '',
+                // location: s.location_id?.locationName || '',
+                class_name: s.class_info?.class_name || '',
+                section: s.class_info?.section || '',
+                academic_year: s.class_info?.academic_year || '',
+                date_of_birth: s.date_of_birth || '',
+                // blood_group: s.blood_group || '',
+                hostel_name: s.hostel_name || '',
+                board_name: s.board_name || '',
+                contact_number: s.contact_number || '',
+                profile_picture: s.pro_pic?.file_url || '',
+                createdAt: s.createdAt || '',
+                updatedAt: s.updatedAt || ''
+            }));
+
+            const fields = [
+                'Roll_no',
+                'student_name',
+                'gender',
+                // 'location',
+                'class_name',
+                'section',
+                'academic_year',
+                'date_of_birth',
+                'hostel_name',
+                'board_name',
+                'contact_number',
+                'profile_picture',
+                'createdAt',
+                'updatedAt'
+            ];
+
+            const parser = new Parser({ fields });
+            const csv = parser.parse(csvData);
+
+            res.setHeader('Content-Disposition', 'attachment; filename=student_report.csv');
+            res.setHeader('Content-Type', 'text/csv');
+            return res.status(200).end(csv);
+        }
+
+        // --- JSON response ---
+        const totalCount = await studentModel.countDocuments(filter);
+        if (paginated) {
+            return res.status(200).json({ success: true, page: pageNum, limit: limitNum, totalCount, data: students });
+        }
+
+        return res.status(200).json({ success: true, totalCount, data: students });
+
+    } catch (error) {
+        console.error('studentReport error:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
     }
-
-    // --- Filter by class_name ---
-    if (class_name) {
-      const classDocs = await classModel.find({ class_name: { $regex: class_name, $options: 'i' } }).select('_id');
-      if (classDocs.length) {
-        const classIds = classDocs.map(c => c._id);
-        filter.class_info = { $in: classIds };
-      } else {
-        return res.status(200).json({ success: true, message: 'No students found', data: [] });
-      }
-    }
-
-    // --- Base query ---
-    let studentQuery = studentModel.find(filter)
-      .populate('location_id', 'locationName')
-      .populate('class_info', 'class_name section academic_year')
-      .populate('pro_pic', 'file_name file_url uploaded_by')
-      .sort({ [sortField]: order });
-
-    // --- Pagination ---
-    let paginated = false;
-    let pageNum = 1, limitNum = 0;
-    if (page && limit) {
-      pageNum = parseInt(page) || 1;
-      limitNum = parseInt(limit) || 10;
-      studentQuery = studentQuery.skip((pageNum - 1) * limitNum).limit(limitNum);
-      paginated = true;
-    }
-
-    // --- Fetch students ---
-    const students = await studentQuery.lean();
-    if (!students.length) {
-      return res.status(200).json({ success: true, message: 'No students found', data: [] });
-    }
-
-    // --- Format date fields ---
-    students.forEach(s => {
-      s.createdAt = moment(s.createdAt).format('DD-MM-YYYY hh:mm:ss A');
-      s.updatedAt = moment(s.updatedAt).format('DD-MM-YYYY hh:mm:ss A');
-      if (s.date_of_birth) s.date_of_birth = moment(s.date_of_birth).format('DD-MM-YYYY');
-    });
-
-    // --- CSV export ---
-    if (format === 'csv') {
-      const csvData = students.map(s => ({
-        Roll_no: s.registration_number || '',
-        student_name: s.student_name || '',
-        gender: s.gender || '',
-        // location: s.location_id?.locationName || '',
-        class_name: s.class_info?.class_name || '',
-        section: s.class_info?.section || '',
-        academic_year: s.class_info?.academic_year || '',
-        date_of_birth: s.date_of_birth || '',
-        // blood_group: s.blood_group || '',
-        hostel_name:s.hostel_name || '',
-        board_name:s.board_name || '',
-        contact_number: s.contact_number || '',
-        profile_picture: s.pro_pic?.file_url || '',
-        createdAt: s.createdAt || '',
-        updatedAt: s.updatedAt || ''
-      }));
-
-      const fields = [
-        'Roll_no',
-        'student_name',
-        'gender',
-        // 'location',
-        'class_name',
-        'section',
-        'academic_year',
-        'date_of_birth',
-        'hostel_name',
-        'board_name',
-        'contact_number',
-        'profile_picture',
-        'createdAt',
-        'updatedAt'
-      ];
-
-      const parser = new Parser({ fields });
-      const csv = parser.parse(csvData);
-
-      res.setHeader('Content-Disposition', 'attachment; filename=student_report.csv');
-      res.setHeader('Content-Type', 'text/csv');
-      return res.status(200).end(csv);
-    }
-
-    // --- JSON response ---
-    const totalCount = await studentModel.countDocuments(filter);
-    if (paginated) {
-      return res.status(200).json({ success: true, page: pageNum, limit: limitNum, totalCount, data: students });
-    }
-
-    return res.status(200).json({ success: true, totalCount, data: students });
-
-  } catch (error) {
-    console.error('studentReport error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
-  }
 };
