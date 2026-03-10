@@ -250,7 +250,7 @@ const bulkUpsertStudents = async (req, res) => {
       if (!student_name) missingFields.push("student_name");
       if (!father_name) missingFields.push("father_name");
       if (!mother_name) missingFields.push("mother_name");
-      if (!date_of_birth) missingFields.push("date_of_birth");
+      // if (!date_of_birth) missingFields.push("date_of_birth");
       if (!gender) missingFields.push("gender");
       if (!class_name) missingFields.push("class_name");
       if (!section) missingFields.push("section");

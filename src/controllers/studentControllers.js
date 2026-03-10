@@ -118,7 +118,7 @@ const downloadStudentsCSV = async (req, res) => {
       'student_name',
       'father_name',
       'mother_name',
-      
+      'gender',
       'deposite_amount',
       'class_name',
       'section',
@@ -132,6 +132,7 @@ const downloadStudentsCSV = async (req, res) => {
       student_name: student.student_name,
       father_name: student.father_name,
       mother_name: student.mother_name,
+      gender: student.gender,
       deposite_amount: student.deposite_amount,
       class_name: student.class_info?.class_name || '',
       section: student.class_info?.section || '',
