@@ -2,6 +2,7 @@ const studentLocation = require("../model/studentLocationModel");
 const UserSchema = require("../model/userModel")
 const axios = require('axios');
 const { syncToGlobal, syncUpdateToGlobal } = require("../service/syncGlobalLocationService");
+const userModel = require("../model/userModel");
 exports.AddLocation1 = async (req, res) => {
   try {
     const { locationName, schoolName, baseUrl, custodyLimits } = req.body;
@@ -272,7 +273,7 @@ exports.updateLocation = async (req, res) => {
     );
 console.log("<><>updatedLocation",updatedLocation)
      // 🔴 Ensure admin has location_id
-    const locationupdate = await User.findByIdAndUpdate(
+    const locationupdate = await userModel.findByIdAndUpdate(
       req.user.id,
       { location_id: updatedLocation._id }
     );
