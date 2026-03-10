@@ -12,8 +12,12 @@ const studentModel = require("../model/studentModel");
 const createPOSCart = async (req, res) => {
   try {
     const { studentId, totalAmount, products } = req.body;
+    console.log("<><>req.user.id",req.user.id)
     const userData = await userModel.findById(req.user.id)
+    console.log("<><>userData",userData);
     location_id=userData.location_id
+    console.log("<><>location_id",location_id);
+    
     if(!userData.location_id){
       return res.status(404).send({success:false,message:"This user has no location"})
     }
