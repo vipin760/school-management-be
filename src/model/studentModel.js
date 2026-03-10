@@ -14,6 +14,8 @@ const studentSchema = new mongoose.Schema({
   mother_tongue: { type: String },
   blood_group: { type: String },
   religion: { type: String },
+  hostel_name: { type: String, required: true },
+  board_name: { type: String, required: true },
   deposite_amount: { type: Number },
   class_info: { type: mongoose.Schema.Types.ObjectId, ref: 'ClassInfo' },
   pro_pic: { type: mongoose.Schema.Types.ObjectId, ref: 'StudentFile' },

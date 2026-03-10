@@ -179,7 +179,7 @@ const createStudent = async (req, res) => {
       registration_number, student_name, father_name, mother_name,
       date_of_birth, gender, birth_place, nationality, mother_tongue,
       blood_group, religion, deposite_amount, class_info, location_id,
-      pro_pic, contact_number, descriptor
+      pro_pic, contact_number, descriptor, hostel_name,board_name
     } = req.body;
     const missingFields = [];
     if (!registration_number) missingFields.push("registration_number");
@@ -188,6 +188,8 @@ const createStudent = async (req, res) => {
     if (!student_name) missingFields.push("student_name");
     if (!father_name) missingFields.push("father_name");
     if (!mother_name) missingFields.push("mother_name");
+    if (!hostel_name) missingFields.push("hostel_name");
+    if (!board_name) missingFields.push("board_name");
     // if (!date_of_birth) missingFields.push("date_of_birth");
     // if (!gender) missingFields.push("gender");
     // if (!class_info) missingFields.push("class_info");
@@ -254,13 +256,15 @@ const createStudent = async (req, res) => {
       nationality,
       mother_tongue,
       blood_group,
+      hostel_name,
       religion,
       deposite_amount,
       class_info: classData._id,
       location_id,
       contact_number,
       pro_pic: pro_pic || null,
-      user_id: savedUser._id
+      user_id: savedUser._id,
+      board_name
     });
 
     // 8️⃣ Log audit
@@ -303,6 +307,8 @@ const getStudents = async (req, res) => {
       location_id,
       class_name,
       exactData,
+      board_name,
+      hostel_name,
       search
     } = req.query;
 
@@ -313,6 +319,12 @@ const getStudents = async (req, res) => {
 
     if (student_name) {
       searchFilter.student_name = { $regex: student_name, $options: 'i' }; // partial match
+    }
+    if (board_name) {
+      searchFilter.board_name = { $regex: board_name, $options: 'i' }; // partial match
+    }
+    if (hostel_name) {
+      searchFilter.hostel_name = { $regex: hostel_name, $options: 'i' }; // partial match
     }
 
     if (registration_number) {
@@ -443,7 +455,9 @@ const updateStudent = async (req, res) => {
       location_id,
       contact_number,
       descriptor,
-      pro_pic
+      pro_pic,
+      hostel_name,
+      board_name
     } = req.body;
 
     // 1️⃣ Check if student exists
@@ -534,7 +548,9 @@ const updateStudent = async (req, res) => {
       ...(classId && { class_info: classId }),
       ...(location_id && { location_id }),
       ...(contact_number && { contact_number }),
-      ...(profilePicId && { pro_pic: profilePicId })
+      ...(profilePicId && { pro_pic: profilePicId }),
+      ...(hostel_name && { hostel_name }),
+      ...(board_name && { board_name })
     };
 
     const updatedStudent = await studentModel.findByIdAndUpdate(id, studentUpdateData, { new: true });

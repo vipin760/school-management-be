@@ -575,7 +575,7 @@ exports.tuckShopSalesReport = async (req, res) => {
         transactions.forEach(tx => {
             tx.products.forEach(prod => {
                 formattedData.push({
-                    inmateId: tx.inmateId,
+                    Roll_no: tx.inmateId,
                     productName: prod.productId?.itemName || 'N/A',
                     category: prod.productId?.category || 'N/A',
                     quantity: prod.quantity,
@@ -598,7 +598,7 @@ exports.tuckShopSalesReport = async (req, res) => {
 
         if (format === 'csv') {
             const fields = [
-                'inmateId',
+                'Roll_no',
                 'productName',
                 'category',
                 'quantity',
@@ -1049,17 +1049,17 @@ exports.studentReport = async (req, res) => {
     // --- CSV export ---
     if (format === 'csv') {
       const csvData = students.map(s => ({
-        registration_number: s.registration_number || '',
+        Roll_no: s.registration_number || '',
         student_name: s.student_name || '',
         gender: s.gender || '',
-        location: s.location_id?.locationName || '',
+        // location: s.location_id?.locationName || '',
         class_name: s.class_info?.class_name || '',
         section: s.class_info?.section || '',
         academic_year: s.class_info?.academic_year || '',
         date_of_birth: s.date_of_birth || '',
-        blood_group: s.blood_group || '',
-        religion: s.religion || '',
-        mother_tongue: s.mother_tongue || '',
+        // blood_group: s.blood_group || '',
+        hostel_name:s.hostel_name || '',
+        board_name:s.board_name || '',
         contact_number: s.contact_number || '',
         profile_picture: s.pro_pic?.file_url || '',
         createdAt: s.createdAt || '',
@@ -1067,17 +1067,16 @@ exports.studentReport = async (req, res) => {
       }));
 
       const fields = [
-        'registration_number',
+        'Roll_no',
         'student_name',
         'gender',
-        'location',
+        // 'location',
         'class_name',
         'section',
         'academic_year',
         'date_of_birth',
-        'blood_group',
-        'religion',
-        'mother_tongue',
+        'hostel_name',
+        'board_name',
         'contact_number',
         'profile_picture',
         'createdAt',
