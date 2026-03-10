@@ -32,7 +32,7 @@ const getDashboardData = async (req, res) => {
 
         // 6. Low balance inmates
         const lowBalanceThreshold = 100;
-        const lowBalanceInmates = await Inmate.find({ balance: { $lt: lowBalanceThreshold } });
+        const lowBalanceInmates = await Inmate.find({ deposite_amount: { $lt: lowBalanceThreshold } });
 
         // 7. Today's Financial transactions
         const todaysFinancialTransactions = await Financial.find({
