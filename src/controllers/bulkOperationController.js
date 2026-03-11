@@ -223,7 +223,7 @@ const bulkUpsertStudents = async (req, res) => {
 
     for (const student of students) {
       const {
-        registration_number,
+        Roll_no:registration_number,
         student_name,
         father_name,
         mother_name,
