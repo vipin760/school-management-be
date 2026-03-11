@@ -497,12 +497,11 @@ exports.transactionSummaryReport = async (req, res) => {
                     amount: tx.depositAmount || tx.wageAmount || 0,
                     type: tx.type,
                     createdAt: tx.createdAt
-                }))
+                })).filter((tx) => tx.amount > 0)
         ];
 
         // Sort transactions by newest first
         allTransactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
         // CSV Export
         if (format === "csv") {
             const fields = ["Roll_no", "board_name", "transaction", "source", "amount", "type", "createdAt"];
