@@ -490,7 +490,7 @@ exports.transactionSummaryReport = async (req, res) => {
             ...financialTransactions
                 .filter(tx => board_name === "all" || tx.student_id?.board_name === board_name)
                 .map(tx => ({
-                    registration_number: tx.student_id?.registration_number,
+                    Roll_no: tx.student_id?.registration_number,
                     board_name: tx.student_id?.board_name,
                     transaction: tx.transaction || "",
                     source: "FINANCIAL",
