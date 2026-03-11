@@ -232,7 +232,6 @@ const bulkUpsertStudents = async (req, res) => {
         mother_tongue,
         blood_group,
         religion,
-        deposite_amount,
         class_name,
         section,
         academic_year,
@@ -259,7 +258,7 @@ const bulkUpsertStudents = async (req, res) => {
       if (!section) missingFields.push("section");
       if (!academic_year) missingFields.push("academic_year");
       if (!contact_number) missingFields.push("contact_number");
-      if (deposite_amount == null) missingFields.push("deposite_amount");
+      // if (deposite_amount == null) missingFields.push("deposite_amount");
 
       if (missingFields.length > 0) {
         results.failed.push({ registration_number: registration_number || "N/A", reason: `Missing required fields: ${missingFields.join(", ")}` });
@@ -324,7 +323,7 @@ const bulkUpsertStudents = async (req, res) => {
           gender,
           hostel_name,
           board_name,
-          deposite_amount,
+          deposite_amount:0,
           class_info: classData._id,
           location_id,
           contact_number,
