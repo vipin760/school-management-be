@@ -114,7 +114,7 @@ const downloadStudentsCSV = async (req, res) => {
     }
 
     const fields = [
-      'registration_number',
+      'Roll_no',
       'student_name',
       'father_name',
       'mother_name',
@@ -130,7 +130,7 @@ const downloadStudentsCSV = async (req, res) => {
 
     // Format student data
     const formattedStudents = students.map(student => ({
-      registration_number: student.registration_number,
+      Roll_no: student.registration_number,
       student_name: student.student_name,
       father_name: student.father_name,
       mother_name: student.mother_name,
