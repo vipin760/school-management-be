@@ -505,7 +505,7 @@ exports.transactionSummaryReport = async (req, res) => {
 
         // CSV Export
         if (format === "csv") {
-            const fields = ["registration_number", "board_name", "transaction", "source", "amount", "type", "createdAt"];
+            const fields = ["Roll_no", "board_name", "transaction", "source", "amount", "type", "createdAt"];
             const parser = new Parser({ fields });
             const csv = parser.parse(allTransactions);
 
