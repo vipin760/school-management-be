@@ -14,7 +14,7 @@ const getDashboardData = async (req, res) => {
 
         // 2. Total balance across all inmates
         const totalBalanceAgg = await Inmate.aggregate([
-            { $group: { _id: null, totalBalance: { $sum: "$balance" } } }
+            { $group: { _id: null, totalBalance: { $sum: "$deposite_amount" } } }
         ]);
         const totalBalance = totalBalanceAgg[0]?.totalBalance || 0;
 
