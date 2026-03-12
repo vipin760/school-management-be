@@ -5,6 +5,7 @@ require('dotenv').config()
 const cors = require('cors');
 const { dbConnect } = require('./config/db');
 const { scheduleBackup, rescheduleBackupOnUpdate } = require('./config/cronBackup');
+const cookieParser = require('cookie-parser')
 
 dbConnect();
 // === Daily Backup at 12:00 AM ===
@@ -20,6 +21,7 @@ const hostname = '0.0.0.0';
 // <<<=== END ===>>>
 
 app.use(express.json());
+app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname,'..', 'uploads')));
 const authRoutes = require("./routes/authRoutes");
 const studentRoutes = require("./routes/studentRoutes");
@@ -57,10 +59,14 @@ const { sendSMS, sendWhatsAppOTP } = require('./service/sms.service');
 //     callback(null, corsOptions);
 // };
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 app.use(morgan(":method :url :status :response-time ms"));
 app.use("/webhook",whatsapppRoutes)
 app.use("/user", authRoutes);
+app.use("/auth", authRoutes);
 
 app.use("/student-pro", studentRoutes);
 app.use("/student", authenticateToken, studentRoutes);
